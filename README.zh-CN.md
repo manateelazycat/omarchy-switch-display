@@ -12,7 +12,7 @@ Super+P 完整循环扩展、镜像、仅内屏、仅外屏；手动切换只影
 
 ## 安装
 
-需要支持插件系统的 Omarchy Shell、Quickshell 全局快捷键、Hyprland Lua monitor API 与 `hl.is_key_down`、Python 3，以及支持曲线渲染器的 Qt Quick Shapes。已在 Omarchy 4.0.4、Hyprland 0.56.2 和 Qt 6.11.2 上验证。如安装了 hyprmoncfg，应使用手动管理模式。
+需要支持插件系统的 Omarchy Shell、Quickshell 全局快捷键、Hyprland Lua monitor API 与 `hl.is_key_down`、Python 3，以及支持曲线渲染器的 Qt Quick VectorImage。已在 Omarchy 4.0.4、Hyprland 0.56.2 和 Qt 6.11.2 上验证。如安装了 hyprmoncfg，应使用手动管理模式。
 
 ```bash
 git clone https://github.com/manateelazycat/omarchy-switch-display.git
@@ -85,13 +85,16 @@ Super+P 恢复完整的四种模式循环，镜像卡片恢复正常显示，前
 
 预览图标重新绘制为细描边的矢量设备图形，统一圆角、线宽和视觉比例。笔记本增加底座、凹槽和边缘高光，外接显示器使用收窄支架与薄底座；屏幕采用淡蓝渐变和曲线画面。扩展模式使用不同画面与双向箭头，镜像模式使用相同画面与等号；单屏图标适当放大。选中时图标同步高亮，在不同桌面缩放下保持清晰。
 
+## 简洁 SVG 线条图标（1.1.7）
+
+四种模式使用独立的 SVG 线条图标，统一单色、线宽、圆角端点和留白。扩展用并排的笔记本与显示器表示，镜像用重叠的屏幕表示，单屏模式分别使用笔记本与显示器轮廓。图标采用空心描边，去除渐变、阴影、屏幕画面和装饰细节；选中时提高线条亮度。使用 Qt 的 SVG 矢量曲线渲染器适配桌面缩放。
+
 ## 验证
 
 ```bash
 python3 -m unittest discover -s tests -v
 omarchy plugin validate .
 /usr/lib/qt6/bin/qmlformat --normalize Service.qml >/dev/null
-/usr/lib/qt6/bin/qmlformat --normalize DisplayIcon.qml >/dev/null
 /usr/lib/qt6/bin/qmlformat --normalize DisplayLayoutIcon.qml >/dev/null
 ```
 

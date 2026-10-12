@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 Andy Stewart -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="64" viewBox="0 0 96 64" fill="none" stroke="#dce7f3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <title>External display only</title>
+  <rect x="22" y="10" width="52" height="33" rx="2.5"/>
+  <path d="M48 43V52M37 52H59"/>
+</svg>

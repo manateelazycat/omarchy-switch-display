@@ -13,13 +13,13 @@ A standalone display layout picker for Omarchy Shell and Hyprland. Hold **Super*
 | Internal only | Use the built-in display at its largest supported resolution. |
 | External only | Use external displays at their largest supported resolutions. |
 
-Changes apply to the current session. The plugin does not save monitor profiles or modify login monitor configuration. Its device icons are drawn as scalable QML vectors, with distinct previews for extended and mirrored layouts.
+Changes apply to the current session. The plugin does not save monitor profiles or modify login monitor configuration. Its device icons use simple SVG outlines: side-by-side devices for extension, overlapping screens for mirroring, and laptop or monitor silhouettes for single-display modes.
 
 ## Requirements
 
 - Omarchy Shell with its plugin system and Quickshell global shortcuts.
 - Hyprland with the Lua monitor API, `hyprctl eval`, and `hl.is_key_down`.
-- Python 3 and Qt Quick Shapes with the curve renderer.
+- Python 3 and Qt Quick VectorImage with the curve renderer.
 - Manual display management if `hyprmoncfg` is installed; the plugin rejects changes while its daemon manages displays automatically.
 
 Tested with Omarchy 4.0.4, Hyprland 0.56.2, and Qt 6.11.2. Omarchy installations using the older Hyprland configuration syntax are not supported.
@@ -61,9 +61,8 @@ These checks do not change the display layout:
 python3 -m unittest discover -s tests -v
 omarchy plugin validate .
 /usr/lib/qt6/bin/qmlformat --normalize Service.qml >/dev/null
-/usr/lib/qt6/bin/qmlformat --normalize DisplayIcon.qml >/dev/null
 /usr/lib/qt6/bin/qmlformat --normalize DisplayLayoutIcon.qml >/dev/null
-/usr/lib/qt6/bin/qmllint DisplayIcon.qml DisplayLayoutIcon.qml
+/usr/lib/qt6/bin/qmllint DisplayLayoutIcon.qml
 bash -n install.sh
 ```
 

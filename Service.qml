@@ -1,8 +1,9 @@
+import "CompatUi" as ThemeUi
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Andy Stewart
 
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import Quickshell
 import Quickshell.Hyprland._GlobalShortcuts 0.0
@@ -141,35 +142,35 @@ Item {
 
     Rectangle {
       anchors.fill: parent
-      color: Color.menu.scrim
+      color: Commons.Color.menu.scrim
 
       BorderSurface {
         id: dialog
-        width: Math.min(Style.space(920), parent.width - Style.spacing.panelPadding * 2)
-        height: content.implicitHeight + Style.spacing.panelPadding * 2
+        width: Math.min(Commons.Style.space(920), parent.width - Commons.Style.spacing.panelPadding * 2)
+        height: content.implicitHeight + Commons.Style.spacing.panelPadding * 2
         anchors.centerIn: parent
-        radius: Style.cornerRadius
-        color: Color.menu.background
-        borderSpec: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
+        radius: Commons.Style.cornerRadius
+        color: Commons.Color.menu.background
+        borderSpec: ThemeUi.ThemeBorder.surfaceSpec("menu", "border", Commons.Color.menu.border, Math.max(1, Commons.Style.space(2)))
 
         Column {
           id: content
           anchors.fill: parent
-          anchors.margins: Style.spacing.panelPadding
-          spacing: Style.spacing.panelGap
+          anchors.margins: Commons.Style.spacing.panelPadding
+          spacing: Commons.Style.spacing.panelGap
 
           Row {
             width: parent.width
             Column {
-              spacing: Style.spacing.labelGap
-              Text { text: "切换显示模式"; color: Color.menu.text; font.family: Style.font.menuFamily; font.pixelSize: Style.font.heading; font.weight: Font.DemiBold }
-              Text { text: "按住 Super，反复按 P 预览；松开两键后应用"; color: Util.alpha(Color.menu.text, 0.7); font.family: Style.font.menuFamily; font.pixelSize: Style.font.subtitle }
+              spacing: Commons.Style.spacing.labelGap
+              Text { text: "切换显示模式"; color: Commons.Color.menu.text; font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.heading; font.weight: Font.DemiBold }
+              Text { text: "按住 Super，反复按 P 预览；松开两键后应用"; color: Commons.Util.alpha(Commons.Color.menu.text, 0.7); font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.subtitle }
             }
           }
 
           Row {
             width: parent.width
-            spacing: Style.spacing.controlGap
+            spacing: Commons.Style.spacing.controlGap
             Repeater {
               model: root.layouts
               delegate: BorderSurface {
@@ -178,32 +179,32 @@ Item {
                 required property int index
                 readonly property bool selected: root.selectedIndex === index
                 width: (parent.width - parent.spacing * 3) / 4
-                height: Math.max(Style.space(146), cardContent.implicitHeight + Style.spacing.rowPaddingX * 2)
-                radius: Style.cornerRadius
-                color: selected ? Color.menu.selectedBackground : Style.normalFill
+                height: Math.max(Commons.Style.space(146), cardContent.implicitHeight + Commons.Style.spacing.rowPaddingX * 2)
+                radius: Commons.Style.cornerRadius
+                color: selected ? Commons.Color.menu.selectedBackground : Commons.Style.normalFillFor(Commons.Color.menu.text, Commons.Color.accent, Commons.Color.urgent)
                 borderSpec: selected
-                  ? Border.surfaceSpec("menu", "selected-border", Color.menu.selectedBorder, Style.space(1))
-                  : Border.controlSpec("normal", Color.menu.text, Color.accent, Color.urgent)
+                  ? ThemeUi.ThemeBorder.surfaceSpec("menu", "selected-border", Commons.Color.menu.selectedBorder, Commons.Style.space(1))
+                  : ThemeUi.ThemeBorder.controlSpec("normal", Commons.Color.menu.text, Commons.Color.accent, Commons.Color.urgent)
 
                 Column {
                   id: cardContent
                   anchors.fill: parent
-                  anchors.margins: Style.spacing.rowPaddingX
-                  spacing: Style.spacing.controlGap
+                  anchors.margins: Commons.Style.spacing.rowPaddingX
+                  spacing: Commons.Style.spacing.controlGap
                   Item {
                     width: parent.width
-                    height: Style.space(62)
+                    height: Commons.Style.space(62)
                     DisplayLayoutIcon {
                       anchors.centerIn: parent
                       layout: card.icon
-                      color: selected ? Color.menu.selectedText : Color.menu.text
+                      color: selected ? Commons.Color.menu.selectedText : Commons.Color.menu.text
                       highlighted: selected
-                      width: Style.space(96)
-                      height: Style.space(62)
+                      width: Commons.Style.space(96)
+                      height: Commons.Style.space(62)
                     }
                   }
-                  Text { text: card.title; color: selected ? Color.menu.selectedText : Color.menu.text; font.family: Style.font.menuFamily; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
-                  Text { text: card.hint; color: Util.alpha(Color.menu.text, 0.7); font.family: Style.font.menuFamily; font.pixelSize: Style.font.bodySmall; elide: Text.ElideRight; width: parent.width; wrapMode: Text.Wrap }
+                  Text { text: card.title; color: selected ? Commons.Color.menu.selectedText : Commons.Color.menu.text; font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.title; font.weight: Font.DemiBold }
+                  Text { text: card.hint; color: Commons.Util.alpha(Commons.Color.menu.text, 0.7); font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.bodySmall; elide: Text.ElideRight; width: parent.width; wrapMode: Text.Wrap }
                 }
               }
             }
@@ -212,13 +213,13 @@ Item {
           Text {
             visible: root.statusText.length > 0
             text: root.statusText
-            color: root.statusError ? Color.urgent : Color.menu.text
-            font.family: Style.font.menuFamily
-            font.pixelSize: Style.font.body
+            color: root.statusError ? Commons.Color.urgent : Commons.Color.menu.text
+            font.family: Commons.Style.font.menuFamily
+            font.pixelSize: Commons.Style.font.body
             wrapMode: Text.Wrap
             width: parent.width
           }
-          Text { text: root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"; color: Color.menu.selectedText; font.family: Style.font.menuFamily; font.pixelSize: Style.font.body; anchors.horizontalCenter: parent.horizontalCenter }
+          Text { text: root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"; color: Commons.Color.menu.selectedText; font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.body; anchors.horizontalCenter: parent.horizontalCenter }
         }
       }
     }

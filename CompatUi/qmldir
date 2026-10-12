@@ -1,0 +1,3 @@
+singleton ThemeBorder 1.0 ThemeBorder.qml
+BorderOverlay 1.0 BorderOverlay.qml
+BorderSurface 1.0 BorderSurface.qml

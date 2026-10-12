@@ -60,6 +60,22 @@ git pull --ff-only
 omarchy restart shell
 ```
 
+## 卸载
+
+```bash
+omarchy plugin remove andy.switch-display --yes
+```
+
+从 `~/.config/hypr/bindings.lua` 删除以
+`-- Switch display layouts with the standalone picker.` 开头的配置块，
+包括紧接着的 `hl.unbind` 和 `hl.bind` 两行。重新加载 Hyprland，恢复之前的
+Super+P 行为：
+
+```bash
+hyprctl reload
+hyprctl configerrors
+```
+
 ## 开发
 
 ```bash

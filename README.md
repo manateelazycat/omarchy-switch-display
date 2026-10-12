@@ -61,6 +61,22 @@ git pull --ff-only
 omarchy restart shell
 ```
 
+## Remove
+
+```bash
+omarchy plugin remove andy.switch-display --yes
+```
+
+Remove the block beginning with
+`-- Switch display layouts with the standalone picker.` from
+`~/.config/hypr/bindings.lua`, including its following `hl.unbind` and `hl.bind`
+lines. Reload Hyprland to restore the previous Super+P behavior:
+
+```bash
+hyprctl reload
+hyprctl configerrors
+```
+
 ## Development
 
 ```bash

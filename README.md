@@ -21,12 +21,13 @@ between extend, mirror, internal-only, and external-only modes.
 - Single-display modes use each display's largest supported resolution.
 - Session-only changes; saved monitor profiles and login configuration stay intact.
 - Simple SVG outline icons with consistent strokes and clear mode previews.
+- Live Omarchy theme colors, fonts, spacing, borders, and system corner rounding.
 - Staged transitions, output readiness checks, and recovery after failed switches.
 
 ## Requirements
 
 Omarchy Shell with its plugin system, Quickshell global shortcuts, Python 3,
-Qt Quick VectorImage, and Hyprland's Lua monitor API and `hl.is_key_down`.
+Qt Quick VectorImage/Effects, and Hyprland's Lua monitor API and `hl.is_key_down`.
 
 Tested with Omarchy 4.0.4, Hyprland 0.56.2, and Qt 6.11.2. If Hyprmoncfg is
 installed, switch it to manual management before using this plugin.

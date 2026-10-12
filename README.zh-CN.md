@@ -7,6 +7,8 @@
 简洁的 Omarchy Shell 显示布局选择器。使用 **Super+P**，在扩展、镜像、
 仅内屏和仅外屏四种模式之间快速切换。
 
+界面直接使用 Omarchy Shell 的当前主题颜色、字体、间距、边框和系统圆角，切换主题后自动同步。
+
 ## 快捷键
 
 | 快捷键 | 操作 |
@@ -26,7 +28,7 @@
 ## 运行要求
 
 需要支持插件系统的 Omarchy Shell、Quickshell 全局快捷键、Python 3、
-Qt Quick VectorImage，以及 Hyprland Lua monitor API 和 `hl.is_key_down`。
+Qt Quick VectorImage/Effects，以及 Hyprland Lua monitor API 和 `hl.is_key_down`。
 
 已在 Omarchy 4.0.4、Hyprland 0.56.2 和 Qt 6.11.2 上验证。
 如果同时使用 Hyprmoncfg，需要先切换到手动管理模式。

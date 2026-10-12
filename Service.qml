@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Andy Stewart
 
 import QtQuick
+import qs.Commons
+import qs.Ui
 import Quickshell
 import Quickshell.Hyprland._GlobalShortcuts 0.0
 import Quickshell.Io
@@ -139,64 +141,69 @@ Item {
 
     Rectangle {
       anchors.fill: parent
-      color: "#99070b12"
+      color: Color.menu.scrim
 
-      Rectangle {
+      BorderSurface {
         id: dialog
-        width: 920
-        height: content.implicitHeight + 42
+        width: Math.min(Style.space(920), parent.width - Style.spacing.panelPadding * 2)
+        height: content.implicitHeight + Style.spacing.panelPadding * 2
         anchors.centerIn: parent
-        radius: 20
-        color: "#171b24"
-        border.color: "#343b49"
-        border.width: 1
+        radius: Style.cornerRadius
+        color: Color.menu.background
+        borderSpec: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
 
         Column {
           id: content
           anchors.fill: parent
-          anchors.margins: 22
-          spacing: 16
+          anchors.margins: Style.spacing.panelPadding
+          spacing: Style.spacing.panelGap
 
           Row {
             width: parent.width
             Column {
-              spacing: 4
-              Text { text: "切换显示模式"; color: "#f5f7fb"; font.pixelSize: 21; font.weight: Font.DemiBold }
-              Text { text: "按住 Super，反复按 P 预览；松开两键后应用"; color: "#a6afbd"; font.pixelSize: 13 }
+              spacing: Style.spacing.labelGap
+              Text { text: "切换显示模式"; color: Color.menu.text; font.family: Style.font.menuFamily; font.pixelSize: Style.font.heading; font.weight: Font.DemiBold }
+              Text { text: "按住 Super，反复按 P 预览；松开两键后应用"; color: Util.alpha(Color.menu.text, 0.7); font.family: Style.font.menuFamily; font.pixelSize: Style.font.subtitle }
             }
           }
 
           Row {
             width: parent.width
-            spacing: 8
+            spacing: Style.spacing.controlGap
             Repeater {
               model: root.layouts
-              delegate: Rectangle {
+              delegate: BorderSurface {
                 required property var modelData
                 property var card: modelData
                 required property int index
-                width: (parent.width - 24) / 4
-                height: 146
-                radius: 14
-                color: root.selectedIndex === index ? "#293b59" : "#202633"
-                border.color: root.selectedIndex === index ? "#8db3ff" : "#353e4e"
-                border.width: 1
+                readonly property bool selected: root.selectedIndex === index
+                width: (parent.width - parent.spacing * 3) / 4
+                height: Math.max(Style.space(146), cardContent.implicitHeight + Style.spacing.rowPaddingX * 2)
+                radius: Style.cornerRadius
+                color: selected ? Color.menu.selectedBackground : Style.normalFill
+                borderSpec: selected
+                  ? Border.surfaceSpec("menu", "selected-border", Color.menu.selectedBorder, Style.space(1))
+                  : Border.controlSpec("normal", Color.menu.text, Color.accent, Color.urgent)
 
                 Column {
+                  id: cardContent
                   anchors.fill: parent
-                  anchors.margins: 12
-                  spacing: 8
+                  anchors.margins: Style.spacing.rowPaddingX
+                  spacing: Style.spacing.controlGap
                   Item {
                     width: parent.width
-                    height: 62
+                    height: Style.space(62)
                     DisplayLayoutIcon {
                       anchors.centerIn: parent
                       layout: card.icon
-                      highlighted: root.selectedIndex === index
+                      color: selected ? Color.menu.selectedText : Color.menu.text
+                      highlighted: selected
+                      width: Style.space(96)
+                      height: Style.space(62)
                     }
                   }
-                  Text { text: card.title; color: "#f3f5fa"; font.pixelSize: 14; font.weight: Font.DemiBold }
-                  Text { text: card.hint; color: "#a6afbd"; font.pixelSize: 11; elide: Text.ElideRight; width: parent.width; wrapMode: Text.Wrap }
+                  Text { text: card.title; color: selected ? Color.menu.selectedText : Color.menu.text; font.family: Style.font.menuFamily; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
+                  Text { text: card.hint; color: Util.alpha(Color.menu.text, 0.7); font.family: Style.font.menuFamily; font.pixelSize: Style.font.bodySmall; elide: Text.ElideRight; width: parent.width; wrapMode: Text.Wrap }
                 }
               }
             }
@@ -205,12 +212,13 @@ Item {
           Text {
             visible: root.statusText.length > 0
             text: root.statusText
-            color: root.statusError ? "#ff8c8c" : "#a6afbd"
-            font.pixelSize: 12
+            color: root.statusError ? Color.urgent : Color.menu.text
+            font.family: Style.font.menuFamily
+            font.pixelSize: Style.font.body
             wrapMode: Text.Wrap
             width: parent.width
           }
-          Text { text: root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"; color: "#8db3ff"; font.pixelSize: 12; anchors.horizontalCenter: parent.horizontalCenter }
+          Text { text: root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"; color: Color.menu.selectedText; font.family: Style.font.menuFamily; font.pixelSize: Style.font.body; anchors.horizontalCenter: parent.horizontalCenter }
         }
       }
     }

@@ -36,6 +36,12 @@ Hyprland 0.56.2 can crash when an external display disconnects during mirroring.
 Use an extended login layout on that version. See the
 [development notes (Chinese)](docs/CHANGELOG.zh-CN.md) for the investigation.
 
+For mirror border artifacts on Hyprland 0.56.2, a compositor patch and isolated
+pixel regression test are available in [patches](patches/README.zh-CN.md).
+The plugin installer does not apply this patch or replace Hyprland.
+An optional [runtime fix](native/README.zh-CN.md) keeps mirror borders black
+after reconnecting without restarting the desktop.
+
 ## Install
 
 ```bash

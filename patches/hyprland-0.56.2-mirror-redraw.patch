@@ -1,0 +1,137 @@
+From: Andy Stewart
+Subject: [PATCH] output: keep mirror borders black across geometry and reconnects
+
+Target: Hyprland v0.56.2 (efb50993780079460b0cbed1363e2166a2de1d9f)
+
+Invalidate reused target buffers when mirror roles or geometry change. Keep
+full damage in buffer-age history, request an idle source frame, and lock
+weak mirror references before propagating damage.
+
+Skip the target connection zoom for mirrors: it paints old source pixels
+into the letterbox areas, while its damageMonitor callback ignores mirrors.
+Clear the target even while its source framebuffer is still pending.
+
+This patch preserves source display animations, output timing and damage tracking.
+
+--- a/src/output/Monitor.hpp
++++ b/src/output/Monitor.hpp
+@@ -267,6 +267,7 @@
+         void         scheduleFrame(Aquamarine::IOutput::scheduleFrameReason reason = Aquamarine::IOutput::AQ_SCHEDULE_CLIENT_UNKNOWN);
+         bool         shouldSkipScheduleFrameOnMouseEvent();
+         void         setMirror(const std::string&);
++        void         damageEntire();
+         bool         isMirror();
+         float        getDefaultScale();
+         void         changeWorkspace(const PHLWORKSPACE& pWorkspace, bool internal = false, bool noMouseMove = false, bool noFocus = false);
+--- a/src/output/Monitor.cpp
++++ b/src/output/Monitor.cpp
+@@ -713,6 +713,16 @@
+ 
+     setMirror(m_activeMonitorRule.m_mirrorOf);
+ 
++    // A soft rule can change either side of the fitted mirror rectangle without
++    // resizing the mirror's swapchain. Its letterbox areas still need repainting.
++    if (isMirror())
++        damageEntire();
++
++    for (const auto& mirrorRef : m_mirrors) {
++        if (const auto mirror = mirrorRef.lock())
++            mirror->damageEntire();
++    }
++
+     return true;
+ }
+ 
+@@ -1331,6 +1341,14 @@
+     PNEWWORKSPACE->m_lastMonitor = "";
+ }
+ 
++void CMonitor::damageEntire() {
++    // Keep the full invalidation in the damage history as well as forcing the
++    // initial frames, so buffers reused later cannot retain the previous layout.
++    m_damage.damageEntire();
++    m_forceFullFrames = std::max(m_forceFullFrames, 3);
++    scheduleFrame(Aquamarine::IOutput::AQ_SCHEDULE_DAMAGE);
++}
++
+ void CMonitor::setMirror(const std::string& mirrorOf) {
+     const auto PMIRRORMON = State::monitorState()->query().relativeTo(Desktop::focusState()->monitor()).configString(mirrorOf).run();
+ 
+@@ -1393,7 +1411,14 @@
+ 
+         // Software lock mirrored monitor
+         Pointer::mgr()->lockSoftwareForMonitor(PMIRRORMON);
+-    }
++
++        // Populate the source's mirror framebuffer even if its desktop is idle.
++        PMIRRORMON->damageEntire();
++    }
++
++    // Changing roles does not necessarily change the output size. Initialize the
++    // whole target, including areas outside the fitted source image.
++    damageEntire();
+ 
+     m_events.modeChanged.emit();
+     Event::bus()->m_events.monitor.layoutChanged.emit();
+--- a/src/render/Renderer.cpp
++++ b/src/render/Renderer.cpp
+@@ -1991,6 +1991,10 @@
+     auto monitor  = m_renderData.pMonitor;
+     auto mirrored = monitor->m_mirrorOf;
+ 
++    // A newly connected source may not have produced a mirror framebuffer yet.
++    // Clear first so reused target buffers cannot expose their previous image.
++    m_renderPass.add(makeUnique<CClearPassElement>(CClearPassElement::SClearData{CHyprColor(0, 0, 0, 1)}));
++
+     // saveBufferForMirror should create it
+     if (!mirrored->resources()->hasMirrorFB())
+         return;
+@@ -2005,8 +2009,6 @@
+     monbox.y = (monitor->m_transformedSize.y - monbox.h) / 2;
+ 
+     const auto MIRROR_TEX = mirrored->resources()->getMirrorTexture();
+-
+-    m_renderPass.add(makeUnique<CClearPassElement>(CClearPassElement::SClearData{CHyprColor(0, 0, 0, 0)}));
+ 
+     CTexPassElement::SRenderData data;
+     data.tex                 = MIRROR_TEX;
+@@ -2130,7 +2132,10 @@
+     if (ZOOMFACTOR != 1.f && pMonitor == State::monitorState()->query().vec(Pointer::mgr()->position()).run())
+         m_renderData.mouseZoomFactor = std::clamp(ZOOMFACTOR, 1.f, INFINITY);
+ 
+-    if (pMonitor->m_zoomAnimProgress->value() != 1) {
++    // Keep the fitted source and its black bars fixed on mirror outputs. A
++    // target connection zoom paints source pixels into those bars while its
++    // update callback cannot invalidate them (damageMonitor skips mirrors).
++    if (!pMonitor->isMirror() && pMonitor->m_zoomAnimProgress->value() != 1) {
+         m_renderData.mouseZoomFactor    = 2.0 - pMonitor->m_zoomAnimProgress->value(); // 2x zoom -> 1x zoom
+         m_renderData.mouseZoomUseMouse  = false;
+         m_renderData.useNearestNeighbor = false;
+@@ -2818,10 +2823,12 @@
+ }
+ 
+ void IHyprRenderer::damageMirrorsWith(PHLMONITOR pMonitor, const CRegion& pRegion) {
+-    for (auto const& mirror : pMonitor->m_mirrors) {
++    for (auto const& mirrorRef : pMonitor->m_mirrors) {
+ 
+         // transform the damage here, so it won't get clipped by the monitor damage ring
+-        auto    monitor = mirror;
++        const auto monitor = mirrorRef.lock();
++        if (!monitor || !monitor->m_output)
++            continue;
+ 
+         CRegion transformed{pRegion};
+ 
+@@ -2835,10 +2842,8 @@
+         transformed.transform(Math::wlTransformToHyprutils(pMonitor->m_transform), pMonitor->m_pixelSize.x * scale, pMonitor->m_pixelSize.y * scale);
+         transformed.translate(Vector2D(monbox.x, monbox.y));
+ 
+-        mirror->addDamage(transformed);
+-
+-        if (auto m = mirror.lock())
+-            m->scheduleFrame(Aquamarine::IOutput::AQ_SCHEDULE_DAMAGE);
++        monitor->addDamage(transformed);
++        monitor->scheduleFrame(Aquamarine::IOutput::AQ_SCHEDULE_DAMAGE);
+     }
+ }
+ 

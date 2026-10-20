@@ -36,6 +36,10 @@ Qt Quick VectorImage/Effects，以及 Hyprland Lua monitor API 和 `hl.is_key_do
 Hyprland 0.56.2 在镜像期间断开外屏时可能崩溃，建议在该版本使用扩展登录布局。
 具体排查过程见[更新与排查记录](docs/CHANGELOG.zh-CN.md)。
 
+Hyprland 0.56.2 的镜像边缘残影另有[合成器修复补丁与独立环境测试](patches/README.zh-CN.md)。
+该补丁需要单独构建 Hyprland，插件安装脚本不会自动应用。
+另有[无需退出桌面的运行时修复](native/README.zh-CN.md)，用于外屏重连后的黑边残影和闪动。
+
 ## 安装
 
 ```bash

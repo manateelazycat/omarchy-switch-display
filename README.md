@@ -11,7 +11,7 @@ between extend, mirror, internal-only, and external-only modes.
 
 | Shortcut | Action |
 | --- | --- |
-| Hold `Super` and press `P` | Open the layout preview. |
+| Hold `Super` and press `P` | Open the preview with the current display mode selected. |
 | Keep holding `Super` and press `P` again | Preview the next layout. |
 | Release both `Super` and `P` | Apply the selected layout and close the preview. |
 
@@ -88,6 +88,7 @@ hyprctl configerrors
 
 ```bash
 python3 -m unittest discover -s tests -v
+node --test tests/test_picker.js
 omarchy plugin validate .
 /usr/lib/qt6/bin/qmlformat --normalize Service.qml >/dev/null
 /usr/lib/qt6/bin/qmlformat --normalize DisplayLayoutIcon.qml >/dev/null

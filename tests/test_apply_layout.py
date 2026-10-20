@@ -425,5 +425,68 @@ class LayoutTests(unittest.TestCase):
             self.assertEqual(run.call_args.kwargs["timeout"], 5)
 
 
+class CurrentLayoutTests(unittest.TestCase):
+    def test_live_mirror_is_recognized_by_numeric_id_string_id_or_name(self):
+        for source in (0, "0", "eDP-1"):
+            with self.subTest(source=source):
+                displays = mirrored_pair()
+                displays[1]["mirrorOf"] = source
+                self.assertEqual(helper.current_layout(displays), "mirror")
+
+    def test_disabled_outputs_determine_internal_and_external_only_modes(self):
+        cases = [
+            ([display("eDP-1", 0)], "internal"),
+            ([display("eDP-1", 0), display("HDMI-A-1", 1, disabled=True)], "internal"),
+            ([display("eDP-1", 0, disabled=True), display("HDMI-A-1", 1)], "external"),
+            ([display("DP-1", 0)], "external"),
+            ([display("eDP-1", 0, disabled=True), display("HDMI-A-1", 1), display("DP-1", 2)], "external"),
+        ]
+        for displays, expected in cases:
+            with self.subTest(expected=expected, displays=displays):
+                self.assertEqual(helper.current_layout(displays), expected)
+
+    def test_multiple_desktop_outputs_and_mixed_layouts_are_extended(self):
+        for displays in ([display("DP-1", 0), display("HDMI-A-1", 1)],
+                         mirrored_pair() + [display("DP-1", 2)]):
+            self.assertEqual(helper.current_layout(displays), "extend")
+        self.assertEqual(helper.current_layout([display("DP-1", 0), display("HDMI-A-1", 1, mirror="0")]), "mirror")
+
+    def test_new_query_observes_hotplug_changes_without_writing_monitor_rules(self):
+        extended = [display("eDP-1", 0), display("HDMI-A-1", 1)]
+        with patch.object(helper, "run", side_effect=[json.dumps(extended), json.dumps(mirrored_pair())]) as run:
+            self.assertEqual(helper.current_layout(helper.get_displays()), "extend")
+            self.assertEqual(helper.current_layout(helper.get_displays()), "mirror")
+        self.assertEqual(len(run.call_args_list), 2)
+        self.assertTrue(all(call.args[0] == ["hyprctl", "monitors", "all", "-j"] for call in run.call_args_list))
+
+    def test_dpms_does_not_change_the_selected_layout(self):
+        displays = mirrored_pair()
+        displays[1]["dpmsStatus"] = False
+        self.assertEqual(helper.current_layout(displays), "mirror")
+
+    def test_no_active_output_and_missing_mirror_source_are_errors(self):
+        for displays in ([], [display("eDP-1", 0, disabled=True)],
+                         [display("eDP-1", 0, disabled=True), display("HDMI-A-1", 1, mirror="0")]):
+            with self.subTest(displays=displays), self.assertRaises(RuntimeError):
+                helper.current_layout(displays)
+
+    def test_current_layout_cli_is_read_only_and_does_not_acquire_switch_lock(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = root / "hyprctl"
+            command.write_text(f"#!{sys.executable}\nimport os, sys\n"
+                               "assert sys.argv[1:] == ['monitors', 'all', '-j'], sys.argv\n"
+                               "print(os.environ['PICKER_TEST_MONITORS'])\n")
+            command.chmod(0o755)
+            environment = dict(os.environ, XDG_RUNTIME_DIR=folder,
+                               PATH=folder + os.pathsep + os.environ["PATH"],
+                               PICKER_TEST_MONITORS=json.dumps(mirrored_pair()))
+            with (root / "andy-switch-display.lock").open("w") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                result = subprocess.run([sys.executable, str(Path(helper.__file__)), "--current-layout"],
+                                        env=environment, check=True, text=True, capture_output=True, timeout=5)
+            self.assertEqual(json.loads(result.stdout), {"ok": True, "layout": "mirror"})
+
+
 if __name__ == "__main__":
     unittest.main()

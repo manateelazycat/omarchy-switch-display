@@ -17,7 +17,11 @@ Item {
   property bool busy: false
   property bool committing: false
   property bool armed: false
-  property int selectedIndex: 0
+  property int selectedIndex: -1
+  property bool readingLayout: false
+  property int pendingPreviewSteps: 0
+  property bool releasePending: false
+  property int previewGeneration: 0
   property string statusText: ""
   property bool statusError: false
   readonly property var layouts: [
@@ -35,21 +39,69 @@ Item {
   function nextPreview() {
     if (root.busy) return
     root.armed = true
-    if (!root.opened) {
+    root.releasePending = false
+    if (!root.opened || (!root.readingLayout && root.selectedIndex < 0)) {
       root.opened = true
-      root.selectedIndex = 0
-      root.committing = false
+      root.selectedIndex = -1
+      root.readingLayout = true
+      root.pendingPreviewSteps = 0
+      root.previewGeneration += 1
+      root.readCurrentLayout()
+    } else if (root.readingLayout) {
+      root.pendingPreviewSteps = (root.pendingPreviewSteps + 1) % root.layouts.length
     } else {
       root.selectedIndex = (root.selectedIndex + 1) % root.layouts.length
-      root.committing = false
     }
+    root.committing = false
     root.statusText = ""
     root.statusError = false
+  }
+
+  function readCurrentLayout() {
+    if (!root.opened || !root.readingLayout || currentLayoutProcess.running) return
+    currentLayoutProcess.generation = root.previewGeneration
+    currentLayoutProcess.running = true
+  }
+
+  function receiveCurrentLayout(generation, exitCode, output, errorText) {
+    if (generation !== root.previewGeneration) {
+      root.readCurrentLayout()
+      return
+    }
+    if (!root.opened || !root.readingLayout) return
+    root.readingLayout = false
+    try {
+      var result = JSON.parse(String(output || "{}"))
+      var index = -1
+      for (var i = 0; i < root.layouts.length; i++) {
+        if (root.layouts[i].id === result.layout) index = i
+      }
+      if (exitCode !== 0 || !result.ok || index < 0)
+        throw new Error(result.message || errorText || "无法识别当前显示模式")
+      root.selectedIndex = (index + root.pendingPreviewSteps) % root.layouts.length
+      root.pendingPreviewSteps = 0
+      root.statusText = ""
+      root.statusError = false
+      var commitAfterRead = root.releasePending
+      root.releasePending = false
+      if (commitAfterRead) root.commitPreview()
+    } catch (error) {
+      root.armed = false
+      root.releasePending = false
+      root.pendingPreviewSteps = 0
+      root.statusError = true
+      root.statusText = "读取当前显示模式失败：" + error
+    }
   }
 
   function commitPreview() {
     if (!root.opened || root.busy || root.committing) return
     root.armed = false
+    if (root.readingLayout) {
+      root.releasePending = true
+      return
+    }
+    if (root.selectedIndex < 0) return
     root.committing = true
     root.apply(root.layouts[root.selectedIndex].id)
   }
@@ -62,7 +114,13 @@ Item {
   }
 
   function close() {
-    if (!root.busy) root.opened = false
+    if (root.busy) return
+    root.opened = false
+    root.armed = false
+    root.readingLayout = false
+    root.releasePending = false
+    root.pendingPreviewSteps = 0
+    root.previewGeneration += 1
   }
 
   function apply(layout) {
@@ -82,7 +140,8 @@ Item {
     target: "andy.switch-display"
     function status(): string {
       return JSON.stringify({ opened: root.opened, armed: root.armed, busy: root.busy,
-        committing: root.committing, layout: root.layouts[root.selectedIndex].id,
+        committing: root.committing, readingLayout: root.readingLayout,
+        layout: root.selectedIndex >= 0 ? root.layouts[root.selectedIndex].id : "",
         message: root.statusText, error: root.statusError,
         mirrorAllowed: true, mirrorReason: "" })
     }
@@ -102,6 +161,18 @@ Item {
     repeat: true
     running: root.opened && root.armed && !root.busy
     onTriggered: if (!keyStateProcess.running) keyStateProcess.running = true
+  }
+
+  Process {
+    id: currentLayoutProcess
+    property int generation: -1
+    command: ["/usr/bin/python3", root.helperPath, "--current-layout"]
+    stdout: StdioCollector { id: currentLayoutOutput; waitForEnd: true }
+    stderr: StdioCollector { id: currentLayoutError; waitForEnd: true }
+    onExited: function(exitCode) {
+      root.receiveCurrentLayout(currentLayoutProcess.generation, exitCode,
+        currentLayoutOutput.text, currentLayoutError.text)
+    }
   }
 
   Process {
@@ -219,7 +290,15 @@ Item {
             wrapMode: Text.Wrap
             width: parent.width
           }
-          Text { text: root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"; color: Commons.Color.menu.selectedText; font.family: Commons.Style.font.menuFamily; font.pixelSize: Commons.Style.font.body; anchors.horizontalCenter: parent.horizontalCenter }
+          Text {
+            text: root.readingLayout ? "正在读取当前显示模式…"
+              : root.selectedIndex >= 0 ? root.layouts[root.selectedIndex].title + "  ·  松开 Super 和 P 后应用"
+              : "按 P 重试读取当前显示模式"
+            color: Commons.Color.menu.selectedText
+            font.family: Commons.Style.font.menuFamily
+            font.pixelSize: Commons.Style.font.body
+            anchors.horizontalCenter: parent.horizontalCenter
+          }
         }
       }
     }

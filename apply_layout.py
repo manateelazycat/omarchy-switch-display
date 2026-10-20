@@ -88,6 +88,22 @@ def internal(display):
     return bool(re.match(r"^(eDP|LVDS|DSI)(-|$)", display["name"], re.I)) or "built-in" in description or "internal" in description
 
 
+def current_layout(displays):
+    enabled = [d for d in displays if not d.get("disabled") and d.get("width") and d.get("height")]
+    if not enabled:
+        raise RuntimeError("没有检测到已启用的显示器")
+    sources = [d for d in enabled if not mirrored(d)]
+    mirrors = [d for d in enabled if mirrored(d)]
+    mirror_sources = [mirror_source(d, enabled) for d in mirrors]
+    if len(sources) == 1 and mirrors and all(name == sources[0]["name"] for name in mirror_sources):
+        return "mirror"
+    if all(internal(d) for d in enabled):
+        return "internal"
+    if not any(internal(d) for d in enabled) and (len(enabled) == 1 or any(internal(d) for d in displays)):
+        return "external"
+    return "extend"
+
+
 def monitor_rule(display, *, position=None, mirror="", disabled=False, max_resolution=False):
     if disabled:
         return {"output": display["name"], "disabled": True, "mirror": ""}
@@ -320,6 +336,8 @@ if __name__ == "__main__":
     try:
         if sys.argv[1:] == ["--capabilities"]:
             print(json.dumps({"mirrorAllowed": True, "mirrorReason": ""}))
+        elif sys.argv[1:] == ["--current-layout"]:
+            print(json.dumps({"ok": True, "layout": current_layout(get_displays())}))
         else:
             main(sys.argv[1] if len(sys.argv) == 2 else "")
     except (OSError, subprocess.SubprocessError, ValueError, RuntimeError) as error:

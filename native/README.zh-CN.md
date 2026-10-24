@@ -10,15 +10,22 @@
 在项目根目录执行：
 
 ```bash
-python3 native/install_hotfix.py --build-only /tmp/mirror-borders-build
+mirror_build_dir="$(mktemp -d "${TMPDIR:-/tmp}/mirror-borders-build.XXXXXXXX")"
+python3 native/install_hotfix.py --build-only "$mirror_build_dir"
 python3 tests/mirror_redraw/run.py \
   --baseline-bin /usr/bin/Hyprland \
   --patched-bin /usr/bin/Hyprland \
-  --hotfix-plugin /tmp/mirror-borders-build/mirror-borders.so \
+  --hotfix-plugin "$mirror_build_dir/mirror-borders.so" \
   --weston-root /path/to/unpacked-weston \
-  --aquamarine-lib /path/to/test-aquamarine-build \
-  --output-dir /tmp/mirror-borders-test
+  --aquamarine-lib /path/to/test-aquamarine-build
 ```
+
+构建目录由 `mktemp -d` 随机创建，权限为 `0700`，构建、验证和安装命令需要在同一个 shell 中执行。
+安装器拒绝其他用户拥有、权限不私有、经过符号链接或位于不可信可写父目录下的构建目录；
+允许 `/tmp` 这类可信用户拥有且设置 sticky bit 的共享目录。
+构建产物必须是当前用户拥有、不可由组或其他用户写入、没有额外硬链接的普通文件，不能是符号链接。
+SHA256 仅用于检查构建内容一致性，目录和文件的归属、权限检查才用于阻止其他本地用户替换产物。
+不要复用旧的固定 `/tmp/mirror-borders-build` 目录或通过 `chmod` 接受不可信产物，应重新创建私有目录并构建。
 
 对照与修复使用同一份合成器程序，仅修复组加载正式插件。
 测试读取整片黑边的 RGB 最大值，检查接入的初始帧、重新启用、三次虚拟输出重连、
@@ -30,7 +37,7 @@ python3 tests/mirror_redraw/run.py \
 通过上述验证后执行：
 
 ```bash
-python3 native/install_hotfix.py --from-build /tmp/mirror-borders-build
+python3 native/install_hotfix.py --from-build "$mirror_build_dir"
 ```
 
 程序安装到 `~/.local/share/omarchy-switch-display/mirror-borders/`，
